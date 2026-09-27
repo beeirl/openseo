@@ -173,6 +173,7 @@ const accessScopeHint =
  */
 const resolveSelfHostAccess = (
   stage: string,
+  appName: string,
   provision: boolean,
   workersSubdomain: string,
 ) =>
@@ -249,7 +250,7 @@ const resolveSelfHostAccess = (
         applicationId: "SelfHostAccess",
         policyName: `open-seo ${stage} self-host users`,
         applicationName: `open-seo ${stage}`,
-        domain: `${workerName(stage)}.${subdomain}`,
+        domain: `${appName}.${subdomain}`,
         emails: allowedEmails,
       });
       policyAud = application.aud;
@@ -315,6 +316,7 @@ export default Alchemy.Stack(
     );
     const databaseProvider = yield* optionalVar("DATABASE_PROVIDER");
     const workersSubdomain = yield* readWorkersSubdomain({ required: false });
+    const appName = (yield* optionalVar("WORKER_NAME")) || workerName(stage);
 
     // Auth needs an absolute BETTER_AUTH_URL. Prod sets it explicitly;
     // previews always derive it from the deterministic worker name — a wrong
@@ -339,7 +341,7 @@ export default Alchemy.Stack(
         );
       }
     } else if (workersSubdomain) {
-      authUrl = `https://${workerName(stage)}.${workersSubdomain}`;
+      authUrl = `https://${appName}.${workersSubdomain}`;
     } else if (authMode === "hosted") {
       return yield* Effect.die(
         new Error(
@@ -354,6 +356,7 @@ export default Alchemy.Stack(
 
     const access = yield* resolveSelfHostAccess(
       stage,
+      appName,
       authMode === "cloudflare_access" && !prod,
       workersSubdomain,
     );
@@ -370,7 +373,7 @@ export default Alchemy.Stack(
     // BEFORE the app worker so the app's cross-script workflow/DO bindings
     // always have a target. Takes no direct traffic (url off).
     const auditWorker = yield* Cloudflare.Worker("open-seo-audit", {
-      name: `${workerName(stage)}-audit`,
+      name: `${appName}-audit`,
       main: "./dist/open_seo_audit/index.js",
       bundle: false,
       url: false,
@@ -421,7 +424,7 @@ export default Alchemy.Stack(
     }).pipe(Alchemy.RemovalPolicy.retain(prod));
 
     const app = yield* Cloudflare.Worker("open-seo", {
-      name: workerName(stage),
+      name: appName,
       // Prod serves the real domains; the zone is inferred from the hostname.
       domain: prod ? ["app.openseo.so", "www.app.openseo.so"] : undefined,
       // Prebuilt worker from `vite build` (@cloudflare/vite-plugin). The entry
