@@ -174,6 +174,7 @@ const accessScopeHint =
 const resolveSelfHostAccess = (
   stage: string,
   appName: string,
+  hostname: string | null,
   provision: boolean,
   workersSubdomain: string,
 ) =>
@@ -250,7 +251,7 @@ const resolveSelfHostAccess = (
         applicationId: "SelfHostAccess",
         policyName: `open-seo ${stage} self-host users`,
         applicationName: `open-seo ${stage}`,
-        domain: `${appName}.${subdomain}`,
+        domain: hostname ?? `${appName}.${subdomain}`,
         emails: allowedEmails,
       });
       policyAud = application.aud;
@@ -317,6 +318,7 @@ export default Alchemy.Stack(
     const databaseProvider = yield* optionalVar("DATABASE_PROVIDER");
     const workersSubdomain = yield* readWorkersSubdomain({ required: false });
     const appName = (yield* optionalVar("WORKER_NAME")) || workerName(stage);
+    const customDomain = (yield* optionalVar("CUSTOM_DOMAIN")) || null;
 
     // Auth needs an absolute BETTER_AUTH_URL. Prod sets it explicitly;
     // previews always derive it from the deterministic worker name — a wrong
@@ -340,6 +342,8 @@ export default Alchemy.Stack(
           ),
         );
       }
+    } else if (customDomain) {
+      authUrl = `https://${customDomain}`;
     } else if (workersSubdomain) {
       authUrl = `https://${appName}.${workersSubdomain}`;
     } else if (authMode === "hosted") {
@@ -357,6 +361,7 @@ export default Alchemy.Stack(
     const access = yield* resolveSelfHostAccess(
       stage,
       appName,
+      customDomain,
       authMode === "cloudflare_access" && !prod,
       workersSubdomain,
     );
@@ -426,7 +431,12 @@ export default Alchemy.Stack(
     const app = yield* Cloudflare.Worker("open-seo", {
       name: appName,
       // Prod serves the real domains; the zone is inferred from the hostname.
-      domain: prod ? ["app.openseo.so", "www.app.openseo.so"] : undefined,
+      domain: prod
+        ? ["app.openseo.so", "www.app.openseo.so"]
+        : customDomain
+          ? [customDomain]
+          : undefined,
+      url: !customDomain,
       // Prebuilt worker from `vite build` (@cloudflare/vite-plugin). The entry
       // exports the DO + WorkflowEntrypoint classes (re-exported by
       // src/server.ts), which `bundle: false` requires. Sibling chunks under
@@ -526,6 +536,8 @@ export default Alchemy.Stack(
       Alchemy.RemovalPolicy.retain(prod),
     );
 
-    return { url: app.url.as<string>() };
+    return {
+      url: customDomain ? `https://${customDomain}` : app.url.as<string>(),
+    };
   }),
 );
