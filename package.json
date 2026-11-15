@@ -20,7 +20,6 @@
     "preview:access": "pnpm alchemy deploy alchemy.preview-access.run.ts --env-file .env.preview --stage preview-access --adopt",
     "alchemy": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-strip-types\" alchemy",
     "destroy:preview": "pnpm alchemy destroy --env-file .env.preview",
-    "sourcemaps:upload": "POSTHOG_SOURCEMAPS=true NODE_OPTIONS=--max-old-space-size=8192 npm run build && pnpm dlx @posthog/cli sourcemap inject --directory ./dist-sourcemaps && pnpm dlx @posthog/cli sourcemap upload --directory ./dist-sourcemaps",
     "cf-typegen": "wrangler types --config wrangler.jsonc --config wrangler.audit.jsonc",
     "types:check": "tsc --noEmit",
     "format:check": "prettier --check .",
