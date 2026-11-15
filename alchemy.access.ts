@@ -65,6 +65,8 @@ export const emailAccessGate = (options: {
   applicationName: string;
   domain: string;
   emails: string[];
+  /** How long a sign-in lasts (Go duration); Cloudflare defaults to "24h". */
+  sessionDuration?: string;
 }) =>
   Effect.gen(function* () {
     const allow = yield* Cloudflare.Access.Policy(options.policyId, {
@@ -77,5 +79,6 @@ export const emailAccessGate = (options: {
       name: options.applicationName,
       domain: options.domain,
       policies: [allow.policyId],
+      sessionDuration: options.sessionDuration,
     });
   });

@@ -253,6 +253,10 @@ const resolveSelfHostAccess = (
         applicationName: `open-seo ${stage}`,
         domain: hostname ?? `${appName}.${subdomain}`,
         emails: allowedEmails,
+        // Cloudflare's 24h default signs a self-hoster out every day; a month
+        // matches the longest preset the Zero Trust dashboard offers.
+        sessionDuration:
+          (yield* optionalVar("ACCESS_SESSION_DURATION")) || "720h",
       });
       policyAud = application.aud;
     }
