@@ -54,7 +54,7 @@ cp .env.selfhost.example .env.selfhost
 pnpm deploy:selfhost --yes
 ```
 
-This provisions the D1 database, KV namespaces, and R2 bucket, applies the database migrations, deploys the Worker, and creates the Cloudflare Access application protecting it (allowing exactly `ACCESS_ALLOWED_EMAILS`). If the account has no Zero Trust team yet, one is created for you, named after your workers.dev subdomain.
+This provisions the D1 database, KV namespaces, and R2 bucket, applies the database migrations, deploys the Worker, and creates the Cloudflare Access application protecting it (allowing exactly `ACCESS_ALLOWED_EMAILS`). If the account has no Zero Trust team yet, one is created for you, named after your workers.dev subdomain. A sign-in lasts 30 days. To change that, set `ACCESS_SESSION_DURATION` (for example `168h` for a week) in `.env.selfhost` and redeploy.
 
 ## 5) Validate setup
 
